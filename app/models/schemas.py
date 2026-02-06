@@ -10,6 +10,11 @@ class GeneratePlanRequest(BaseModel):
         max_length=500,
         description="Additional context about the user's situation"
     )
+    context: Optional[str] = Field(
+        default=None,
+        max_length=1000,
+        description="Additional context about the user's situation"
+    )
 
     # example for documentation
     class Config:

@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 import boto3
 import json
 import logging
@@ -9,13 +10,21 @@ from app.models.schemas import (
     WeeklyTask,
     Resource
 )
+from app.config import settings
+
 
 logger = logging.getLogger(__name__)
 
-bedrock_runtime = boto3.client(
-    service_name = 'bedrock-runtime',
-    region_name = 'ap-southeast-2'
-)
+# bedrock_runtime = boto3.client(
+#     service_name = 'bedrock-runtime',
+#     region_name = 'ap-southeast-2'
+# )
+
+if not settings.USE_MOCK_AWS:
+    bedrock_runtime = boto3.client(
+        service_name='bedrock-runtime',
+        region_name='ap-southeast-2'
+    )
 
 def build_system_prompt(category: str) -> str:
     """
@@ -26,7 +35,7 @@ def build_system_prompt(category: str) -> str:
     Your task is to create detailed, actionable plans that help people achieve their goals. 
     You must respond with a valid JSON object following this exact structure:
     {
-        "estimated_duration_weeks: <number between 1-52>,
+        "estimated_duration_weeks": <number between 1-52>,
 
         "weekly_breakdown": [
             {  
@@ -42,7 +51,7 @@ def build_system_prompt(category: str) -> str:
             }
         ],
 
-        "response": [
+        "resources": [
             {
                 "title": "<resource name>",
                 "url": "<URL of 'search: <term>'>",
@@ -72,7 +81,50 @@ def build_system_prompt(category: str) -> str:
     }
 
     return base_prompt + category_guidance.get(category, "")
-    
+
+def generate_mock_plan(goal: str, category: str) -> dict:
+    """Generate a mock plan for local development."""
+    return {
+        "estimated_duration_weeks": 8,
+        "weekly_breakdown": [
+            {
+                "week_number": 1,
+                "focus_area": "Fundamentals and Setup",
+                "tasks": [
+                    {
+                        "task": "Research and understand the basics of your goal",
+                        "estimated_hours": 5.0,
+                        "milestone": True
+                    },
+                    {
+                        "task": "Set up necessary tools and resources",
+                        "estimated_hours": 3.0,
+                        "milestone": False
+                    }
+                ]
+            },
+            {
+                "week_number": 2,
+                "focus_area": "Building Core Skills",
+                "tasks": [
+                    {
+                        "task": "Practice basic techniques daily",
+                        "estimated_hours": 7.0,
+                        "milestone": False
+                    }
+                ]
+            }
+        ],
+        "resources": [
+            {
+                "title": "Getting Started Guide",
+                "url": "https://example.com/guide",
+                "resource_type": "article"
+            }
+        ],
+        "total_estimated_hours": 64.0
+    }
+        
     
 async def generate_plan(
         goal: str,
@@ -80,6 +132,48 @@ async def generate_plan(
         category: str,
         request_id: str
     ) -> GeneratePlanResponse:
+    # MOCK MODE: Return fake plan for local dev
+    if settings.USE_MOCK_AWS:
+        logger.info(f"Request {request_id}: Using mock plan generation (local dev mode)")
+        plan_json = generate_mock_plan(goal, category)
+
+        # Parse into our structured models
+        weekly_breakdown = [
+            WeeklyBreakdown(
+                week_number=week['week_number'],
+                focus_area=week['focus_area'],
+                tasks=[WeeklyTask(**task) for task in week['tasks']]
+            )
+            for week in plan_json['weekly_breakdown']
+        ]
+
+        resources = [
+            Resource(**resource) 
+            for resource in plan_json.get('resources', [])
+        ]
+
+        return GeneratePlanResponse(
+            request_id=request_id,
+            goal=goal,
+            category=category,
+            estimated_duration_weeks=plan_json['estimated_duration_weeks'],
+            weekly_breakdown=weekly_breakdown,
+            resources=resources,
+            total_estimated_hours=plan_json['total_estimated_hours'],
+            created_at=datetime.utcnow(),
+            metadata={
+                "tokens_used": {
+                    "input": 500,
+                    "output": 1200,
+                    "total": 1700
+                },
+                "model": "mock-model",
+                "mock_mode": True
+            }
+        )
+
+
+    # REAL MODE: Call Bedrock
     system_prompt = build_system_prompt(category)
 
     user_message = f"Goal: {goal}"
@@ -91,7 +185,7 @@ async def generate_plan(
         logger.info(f"Request {request_id}:")
         logger.info("Calling Bedrock for plan generation")
 
-        repsonse = bedrock_runtime.invoke_model(
+        response = bedrock_runtime.invoke_model(
             modelId='anthropic.claude-3-sonnet-20240229-v1:0',  
             contentType='application/json',
             accept='application/json',
@@ -109,7 +203,7 @@ async def generate_plan(
             })
         )
 
-        response_body = json.loads(response['body'].read())
+        response_body = json.loads(response['body'].read().decode())
         plan_text = response_body['content'][0]['text']
 
         plan_json = extract_json(plan_text)
@@ -117,7 +211,7 @@ async def generate_plan(
         weekly_breakdown = [
             WeeklyBreakdown(
                 week_number = week['week_number'],
-                focus_are = week['focus_area'],
+                focus_area = week['focus_area'],
                 tasks = [WeeklyTask(**task) for task in week['tasks']]
             )
             for week in plan_json['weekly_breakdown']

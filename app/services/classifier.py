@@ -2,14 +2,23 @@ import boto3
 import json
 import logging
 from typing import Literal
+from app.config import settings
+
 
 logger = logging.getLogger(__name__)
 
-# initialize bedrock client
-bedrock_runtime = boto3.client(
-    service_name='bedrock-runtime',
-    region_name='ap-southeast-2'
-)
+# # initialize bedrock client
+# bedrock_runtime = boto3.client(
+#     service_name='bedrock-runtime',
+#     region_name='ap-southeast-2'
+# )
+
+# Only create real client if not mocking
+if not settings.USE_MOCK_AWS:
+    bedrock_runtime = boto3.client(
+        service_name='bedrock-runtime',
+        region_name='ap-southeast-2'
+    )
 
 Category = Literal[
     "certification",
@@ -29,6 +38,24 @@ async def classify_goal(goal: str) -> str:
     - the category helps us customize the plan generation prompt
     """
 
+    # MOCK MODE: Return fake classification for local dev
+    if settings.USE_MOCK_AWS:
+        logger.info("Using mock classification (local dev mode)")
+        # Simple keyword-based mock classification
+        goal_lower = goal.lower()
+        if any(word in goal_lower for word in ['cert', 'exam', 'aws', 'test']):
+            return "certification"
+        elif any(word in goal_lower for word in ['exercise', 'fitness', 'gym', 'run']):
+            return "fitness"
+        elif any(word in goal_lower for word in ['write', 'paint', 'music', 'art']):
+            return "creative"
+        elif any(word in goal_lower for word in ['productivity', 'organize', 'habits']):
+            return "productivity"
+        else:
+            return "skill-learning"
+
+
+    # REAL MODE: Call Bedrock
     classification_prompt = f"""
     You are a goal classification assistant. 
     Classify the following goal into exactly one category.

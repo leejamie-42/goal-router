@@ -3,10 +3,14 @@ import logging
 from datetime import datetime
 from typing import Optional
 from decimal import Decimal
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
-dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
+# dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
+
+if not settings.USE_MOCK_AWS:
+    dynamodb = boto3.resource('dynamodb', region_name=settings.AWS_REGION)
 
 TABLE_NAME = 'ai-router-usage-logs'
 
@@ -30,8 +34,26 @@ async def log_request(
     - Error tracking (what's failing)
     """
     
+    # MOCK MODE: Just log to console
+    if settings.USE_MOCK_AWS:
+        log_entry = {
+            'request_id': request_id,
+            'timestamp': datetime.utcnow().isoformat(),
+            'goal': goal[:100] + '...' if len(goal) > 100 else goal,
+            'category': category,
+            'tokens_used': tokens_used,
+            'latency_ms': round(latency_ms, 2),
+            'success': success,
+        }
+        if error:
+            log_entry['error'] = error[:200]
+
+        logger.info(f"[MOCK] Request logged: {log_entry}")
+        return
+
+    # REAL MODE: Log to DynamoDB
     try:
-        table = dynamodb.Table(TABLE_NAME)
+        table = dynamodb.Table(settings.DYNAMODB_TABLE_NAME)
         
         # dynamoDB doesn't support float, use decimal
         latency_decimal = Decimal(str(round(latency_ms, 2)))
