@@ -1,0 +1,71 @@
+# Don't copy these into Docker image (faster builds, smaller images)
+
+# Python cache files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist/
+build/
+*.whl
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# GitHub workflows
+.github
+
+# Terraform files
+.terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+terraform.tfstate.d/
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Documentation
+*.md
+README.md
+LICENSE
+
+# Docker files (don't need these inside the image)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Test files
+tests/
+*.test.py
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+
+# OS files
+Thumbs.db

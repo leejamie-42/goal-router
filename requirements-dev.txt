@@ -1,0 +1,6 @@
+black==23.12.1          # Code formatter
+ruff==0.1.9             # Fast linter
+mypy==1.8.0             # Type checker
+pytest==7.4.3           # Testing framework
+pytest-cov==4.1.0       # Coverage reports
+pre-commit==3.6.0       # Git hooks manager

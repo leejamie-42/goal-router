@@ -1,117 +1,94 @@
-import json
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from mangum import Mangum
 import logging
-from typing import Any, Dict, Optional
-from datetime import datetime
+from contextlib import asynccontextmanager
+import json
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+# configure logging to use JSON format
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(message)s' 
+)
+logger = logging.getLogger(__name__)
 
 
-class StructuredLogger:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for startup/shutdown events.
+    This runs when the app starts and stops.
+    """
+    # Startup
+    startup_log = {
+        "timestamp": "startup",
+        "event_type": "application_startup",
+        "service": "cloud-ai-router",
+        "version": "1.0.0"
+    }
+    logger.info(json.dumps(startup_log))
 
-    @staticmethod
-    def log_request(
-        request_id: str,
-        goal: str,
-        goal_length: int,
-        category: Optional[str] = None
-    ):
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "event_type": "request_received",
-            "request_id": request_id,
-            "goal_length": goal_length,
-        }
-        
-        if category:
-            log_entry["category"] = category
-            
-        logger.info(json.dumps(log_entry))
+    yield # Application runs here
     
-    @staticmethod
-    def log_llm_call(
-        request_id: str,
-        model_id: str,
-        input_tokens: int,
-        output_tokens: int,
-        latency_ms: float,
-        success: bool
-    ):
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "event_type": "llm_call",
-            "request_id": request_id,
-            "model_id": model_id,
-            "input_tokens": input_tokens,
-            "output_tokens": output_tokens,
-            "total_tokens": input_tokens + output_tokens,
-            "latency_ms": round(latency_ms, 2),
-            "success": success
-        }
-        logger.info(json.dumps(log_entry))
-    
-    @staticmethod
-    def log_classification(
-        request_id: str,
-        category: str,
-        confidence: Optional[float] = None,
-        latency_ms: Optional[float] = None
-    ):
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "event_type": "classification",
-            "request_id": request_id,
-            "category": category,
-        }
-        
-        if confidence is not None:
-            log_entry["confidence"] = round(confidence, 3)
-        
-        if latency_ms is not None:
-            log_entry["latency_ms"] = round(latency_ms, 2)
-            
-        logger.info(json.dumps(log_entry))
-    
-    @staticmethod
-    def log_error(
-        request_id: str,
-        error_type: str,
-        error_message: str,
-        goal_length: Optional[int] = None,
-        stack_trace: Optional[str] = None
-    ):
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "event_type": "error",
-            "request_id": request_id,
-            "error_type": error_type,
-            "error_message": error_message,
-        }
-        
-        if goal_length is not None:
-            log_entry["goal_length"] = goal_length
-        
-        if stack_trace:
-            log_entry["stack_trace"] = stack_trace[:1000]  # Truncate long traces
-            
-        logger.error(json.dumps(log_entry))
-    
-    @staticmethod
-    def log_cost_guard_triggered(
-        request_id: str,
-        estimated_tokens: int,
-        max_allowed: int,
-        goal_length: int
-    ):
-        log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
-            "event_type": "cost_guard_triggered",
-            "request_id": request_id,
-            "estimated_tokens": estimated_tokens,
-            "max_allowed_tokens": max_allowed,
-            "goal_length": goal_length,
-        }
-        logger.warning(json.dumps(log_entry))
+    # Shutdown
+    shutdown_log = {
+       "timestamp": "shutdown",
+       "event_type": "application_shutdown",
+       "service": "cloud-ai-router"
+    }
+    logger.info(json.dumps(shutdown_log))
 
 
-structured_logger = StructuredLogger()
+
+# create the FastAPI application
+app = FastAPI(
+    title="Cloud AI Personal Productivity Router",
+    description="Serverless API that generates structured action plans from user goals",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# # add CORS middleware (allows frontend apps to call this API)
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],  # In production, specify actual domains
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
+
+# health check endpoint (important for AWS monitoring)
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint.
+    AWS uses this to verify the Lambda is working.
+    """
+    return {
+        "status": "healthy",
+        "service": "ai-productivity-router"
+    }
+
+
+# root endpoint with API info
+@app.get("/")
+async def root():
+    return {
+        "service": "Cloud AI Personal Productivity Router",
+        "version": "1.0.0",
+        "endpoints": {
+            "generate_plan": "/api/v1/generate-plan",
+            "health": "/health"
+        }
+    }
+
+
+# import and include the router
+from app.router import router as api_router
+app.include_router(api_router, prefix="/api/v1")
+
+
+# This is the handler that AWS Lambda will call
+# Mangum adapts FastAPI to work with Lambda's event format
+handler = Mangum(app)

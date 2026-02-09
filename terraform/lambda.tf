@@ -13,7 +13,7 @@ resource "aws_lambda_function" "api" {
   environment {
     variables = {
       USE_MOCK_AWS        = "true"
-      APP_AWS_REGION          = var.aws_region
+      APP_AWS_REGION      = var.aws_region
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.usage_logs.name
     }
   }
