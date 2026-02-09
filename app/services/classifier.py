@@ -16,18 +16,13 @@ logger = logging.getLogger(__name__)
 # Only create real client if not mocking
 if not settings.USE_MOCK_AWS:
     bedrock_runtime = boto3.client(
-        service_name='bedrock-runtime',
-        region_name='ap-southeast-2'
+        service_name="bedrock-runtime", region_name="ap-southeast-2"
     )
 
 Category = Literal[
-    "certification",
-    "skill-learning",
-    "fitness",
-    "creative",
-    "productivity",
-    "other"
+    "certification", "skill-learning", "fitness", "creative", "productivity", "other"
 ]
+
 
 async def classify_goal(goal: str) -> str:
     """
@@ -43,17 +38,16 @@ async def classify_goal(goal: str) -> str:
         logger.info("Using mock classification (local dev mode)")
         # Simple keyword-based mock classification
         goal_lower = goal.lower()
-        if any(word in goal_lower for word in ['cert', 'exam', 'aws', 'test']):
+        if any(word in goal_lower for word in ["cert", "exam", "aws", "test"]):
             return "certification"
-        elif any(word in goal_lower for word in ['exercise', 'fitness', 'gym', 'run']):
+        elif any(word in goal_lower for word in ["exercise", "fitness", "gym", "run"]):
             return "fitness"
-        elif any(word in goal_lower for word in ['write', 'paint', 'music', 'art']):
+        elif any(word in goal_lower for word in ["write", "paint", "music", "art"]):
             return "creative"
-        elif any(word in goal_lower for word in ['productivity', 'organize', 'habits']):
+        elif any(word in goal_lower for word in ["productivity", "organize", "habits"]):
             return "productivity"
         else:
             return "skill-learning"
-
 
     # REAL MODE: Call Bedrock
     classification_prompt = f"""
@@ -75,24 +69,21 @@ async def classify_goal(goal: str) -> str:
     try:
         # call Bedrock with Claude
         response = bedrock_runtime.invoke_model(
-            modelId='anthropic.claude-3-haiku-20240307-v1:0',
-            contentType='application/json',
-            accept='application/json',
-            body=json.dumps({
-                "anthropic_version": "bedrock-2023-05-31",
-                "max_tokens": 50, 
-                "messages": [
-                        {
-                            "role": "user",
-                            "content": classification_prompt
-                        }
-                    ],
-                    "temperature": 0.1  # for classification pick lower temperature
-            })
+            modelId="anthropic.claude-3-haiku-20240307-v1:0",
+            contentType="application/json",
+            accept="application/json",
+            body=json.dumps(
+                {
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 50,
+                    "messages": [{"role": "user", "content": classification_prompt}],
+                    "temperature": 0.1,  # for classification pick lower temperature
+                }
+            ),
         )
 
-        response_body = json.loads(response['body'].read())
-        category = response_body['content'][0]['text'].strip().lower()
+        response_body = json.loads(response["body"].read())
+        category = response_body["content"][0]["text"].strip().lower()
 
         # valid_categories = ["certification", "skill-learning", "fitness", "creative", "productivity", "other"]
         # if category not in valid_categories:
@@ -104,4 +95,3 @@ async def classify_goal(goal: str) -> str:
     except Exception as e:
         logger.error(f"Error classifying goal: {str(e)}")
         return "other"
-
