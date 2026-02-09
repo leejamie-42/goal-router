@@ -37,7 +37,7 @@ async def test():
     )
     
     try:
-        print("\n🚀 Testing AI Personal Productivity Router...\n")
+        print("\nTesting AI Personal Productivity Router...\n")
         response = await generate_plan_endpoint(request)
         
         print(f"✅ Success! Generated {len(response.weekly_breakdown)}-week plan")
