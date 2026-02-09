@@ -76,3 +76,68 @@ resource "aws_iam_role_policy" "bedrock_policy" {
     ]
   })
 }
+
+
+# Custom policy for CloudWatch Metrics (Day 5)
+resource "aws_iam_role_policy" "cloudwatch_metrics_policy" {
+  name = "${var.project_name}-cloudwatch-metrics-policy"
+  role = aws_iam_role.lambda_role.id
+
+  # This policy allows the Lambda to:
+  # 1. Publish custom metrics to CloudWatch
+  # 2. Create log groups and streams (if they don't exist)
+  # 3. Write log events to CloudWatch Logs
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricData" # For custom metrics
+        ]
+        Resource = "*" # CloudWatch metrics don't support resource-level permissions
+        Condition = {
+          StringEquals = {
+            "cloudwatch:namespace" = "CloudAIRouter" # Restrict to our namespace only
+          }
+        }
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",  # For creating log groups
+          "logs:CreateLogStream", # For creating new log streams
+          "logs:PutLogEvents"     # For writing logs
+        ]
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${var.project_name}-*",
+          "arn:aws:logs:${var.aws_region}:*:log-group:/aws/lambda/${var.project_name}-*:*"
+        ]
+      }
+    ]
+  })
+}
+
+
+# Cloudwatch dashboard permissions
+resource "aws_iam_user_policy" "terraform_user_cloudwatch_dashboard" {
+  name = "${var.project_name}-terraform-cloudwatch-dashboard"
+  user = "terraform-user" # Your Terraform IAM user name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CloudWatchDashboardManagement"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutDashboard",
+          "cloudwatch:GetDashboard",
+          "cloudwatch:DeleteDashboards",
+          "cloudwatch:ListDashboards"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}

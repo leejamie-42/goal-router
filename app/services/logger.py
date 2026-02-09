@@ -1,84 +1,117 @@
-import boto3
+import json
 import logging
+from typing import Any, Dict, Optional
 from datetime import datetime
-from typing import Optional
-from decimal import Decimal
-from app.config import settings
 
-logger = logging.getLogger(__name__)
-
-# dynamodb = boto3.resource('dynamodb', region_name='ap-southeast-2')
-
-if not settings.USE_MOCK_AWS:
-    dynamodb = boto3.resource('dynamodb', region_name=settings.AWS_REGION)
-
-TABLE_NAME = 'ai-router-usage-logs'
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
-async def log_request(
-    request_id: str,
-    goal: str,
-    category: str,
-    tokens_used: int,
-    latency_ms: float,
-    success: bool,
-    error: Optional[str] = None
-) -> None:
-    """
-    Log request details to DynamoDB for observability and cost tracking.
-    
-    This enables:
-    - Usage analytics (how many requests per day)
-    - Cost tracking (how much are we spending)
-    - Performance monitoring (average latency)
-    - Error tracking (what's failing)
-    """
-    
-    # MOCK MODE: Just log to console
-    if settings.USE_MOCK_AWS:
+class StructuredLogger:
+
+    @staticmethod
+    def log_request(
+        request_id: str,
+        goal: str,
+        goal_length: int,
+        category: Optional[str] = None
+    ):
         log_entry = {
-            'request_id': request_id,
-            'timestamp': datetime.utcnow().isoformat(),
-            'goal': goal[:100] + '...' if len(goal) > 100 else goal,
-            'category': category,
-            'tokens_used': tokens_used,
-            'latency_ms': round(latency_ms, 2),
-            'success': success,
-        }
-        if error:
-            log_entry['error'] = error[:200]
-
-        logger.info(f"[MOCK] Request logged: {log_entry}")
-        return
-
-    # REAL MODE: Log to DynamoDB
-    try:
-        table = dynamodb.Table(settings.DYNAMODB_TABLE_NAME)
-        
-        # dynamoDB doesn't support float, use decimal
-        latency_decimal = Decimal(str(round(latency_ms, 2)))
-        
-        item = {
-            'request_id': request_id,
-            'timestamp': datetime.utcnow().isoformat(),
-            'goal': goal[:500],  # truncate long goals
-            'goal_length': len(goal),
-            'category': category,
-            'tokens_used': tokens_used,
-            'latency_ms': latency_decimal,
-            'success': success,
-            'date': datetime.utcnow().strftime('%Y-%m-%d'),  # for daily aggregations
-            'hour': datetime.utcnow().strftime('%Y-%m-%d-%H')  # for hourly aggregations
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": "request_received",
+            "request_id": request_id,
+            "goal_length": goal_length,
         }
         
-        if error:
-            item['error'] = error[:1000]  # truncate long errors
+        if category:
+            log_entry["category"] = category
+            
+        logger.info(json.dumps(log_entry))
+    
+    @staticmethod
+    def log_llm_call(
+        request_id: str,
+        model_id: str,
+        input_tokens: int,
+        output_tokens: int,
+        latency_ms: float,
+        success: bool
+    ):
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": "llm_call",
+            "request_id": request_id,
+            "model_id": model_id,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
+            "latency_ms": round(latency_ms, 2),
+            "success": success
+        }
+        logger.info(json.dumps(log_entry))
+    
+    @staticmethod
+    def log_classification(
+        request_id: str,
+        category: str,
+        confidence: Optional[float] = None,
+        latency_ms: Optional[float] = None
+    ):
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": "classification",
+            "request_id": request_id,
+            "category": category,
+        }
         
-        table.put_item(Item=item)
+        if confidence is not None:
+            log_entry["confidence"] = round(confidence, 3)
         
-        logger.info(f"Request {request_id}: Logged to DynamoDB")
+        if latency_ms is not None:
+            log_entry["latency_ms"] = round(latency_ms, 2)
+            
+        logger.info(json.dumps(log_entry))
+    
+    @staticmethod
+    def log_error(
+        request_id: str,
+        error_type: str,
+        error_message: str,
+        goal_length: Optional[int] = None,
+        stack_trace: Optional[str] = None
+    ):
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": "error",
+            "request_id": request_id,
+            "error_type": error_type,
+            "error_message": error_message,
+        }
         
-    except Exception as e:
-        # logging failures should not break the main request
-        # log the error but don't raise
-        logger.error(f"Failed to log request {request_id} to DynamoDB: {str(e)}")
+        if goal_length is not None:
+            log_entry["goal_length"] = goal_length
+        
+        if stack_trace:
+            log_entry["stack_trace"] = stack_trace[:1000]  # Truncate long traces
+            
+        logger.error(json.dumps(log_entry))
+    
+    @staticmethod
+    def log_cost_guard_triggered(
+        request_id: str,
+        estimated_tokens: int,
+        max_allowed: int,
+        goal_length: int
+    ):
+        log_entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "event_type": "cost_guard_triggered",
+            "request_id": request_id,
+            "estimated_tokens": estimated_tokens,
+            "max_allowed_tokens": max_allowed,
+            "goal_length": goal_length,
+        }
+        logger.warning(json.dumps(log_entry))
+
+
+structured_logger = StructuredLogger()
