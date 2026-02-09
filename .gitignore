@@ -21,3 +21,7 @@ NOTES.txt
 
 lambda-package/
 lambda-deployment.zip
+.aws/
+*.tfstate
+*.tfstate.backup
+.terraform/
