@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Goal Planner - Portfolio Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #1e3a8a;
+        }
+
+        textarea::placeholder {
+            color: #999;
+        }
+
+        button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1e3a8a;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .result h2 {
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .meta-info {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .meta-info p {
+            margin: 8px 0;
+            color: #555;
+        }
+
+        .meta-info strong {
+            color: #333;
+        }
+
+        .week {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            border-left: 4px solid #1e3a8a;
+        }
+
+        .week h3 {
+            color: #1e3a8a;
+            margin-bottom: 12px;
+            font-size: 1.3em;
+        }
+
+        .week ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .week li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .week li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #1e3a8a;
+            font-weight: bold;
+        }
+
+        .milestone {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            border: 2px solid #1e3a8a;
+        }
+
+        .milestone strong {
+            color: #1e3a8a;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 16px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .examples {
+            margin-top: 16px;
+            padding: 16px;
+            background: #f0f4ff;
+            border-radius: 8px;
+        }
+
+        .examples h4 {
+            color: #1e3a8a;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .example-btn {
+            display: inline-block;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #1e3a8a;
+            border-radius: 4px;
+            color: #1e3a8a;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin: 4px;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover {
+            background: #1e3a8a;
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.9;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .card {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <!-- <h1>🎯 AI Goal Planner</h1> -->
+            <!-- goal / target / crosshair -->
+            <h1>
+                <i data-lucide="crosshair" style="width: 40px; height: 40px;"></i>
+                AI Goal Planner
+            </h1>
+            <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+            <script>
+                lucide.createIcons();
+            </script>
+            <p>Transform your goals into structured action plans</p>
+        </div>
+
+
+        <div class="card">
+            <form id="goalForm">
+                <div class="form-group">
+                    <label for="goal">What's your goal? *</label>
+                    <textarea id="goal" rows="3" placeholder="e.g., Prepare for AWS Solutions Architect certification"
+                        required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="context">Additional context (optional)</label>
+                    <textarea id="context" rows="2"
+                        placeholder="e.g., Beginner with basic cloud knowledge, 10 hours/week available"></textarea>
+                </div>
+
+                <div class="examples">
+                    <h4>Try an example:</h4>
+                    <span class="example-btn" onclick="fillExample('aws')">AWS Certification</span>
+                    <span class="example-btn" onclick="fillExample('piano')">Learn Piano</span>
+                    <span class="example-btn" onclick="fillExample('fitness')">Get Fit</span>
+                    <span class="example-btn" onclick="fillExample('python')">Learn Python</span>
+                </div>
+
+                <button type="submit" id="submitBtn">Generate My Plan</button>
+            </form>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Creating your personalized plan...</p>
+                <p style="font-size: 0.9em; color: #666; margin-top: 8px;">This may take 5-10 seconds</p>
+            </div>
+
+            <div class="error" id="error"></div>
+
+            <div class="result" id="result"></div>
+        </div>
+
+        <div class="footer">
+            <p>Built by <strong>Jamie Lee</strong> | <a href="https://github.com/yourusername/goal-router"
+                    target="_blank">View on GitHub</a></p>
+            <p style="font-size: 0.9em; margin-top: 8px;">Portfolio project demonstrating AI orchestration, serverless
+                architecture, and cloud engineering</p>
+        </div>
+    </div>
+
+    <script>
+        // const API_URL = 'YOUR_API_GATEWAY_URL_HERE/api/v1/generate-plan';
+        const API_URL = 'https://5zy0vx4wsb.execute-api.ap-southeast-2.amazonaws.com/docs/api/v1/generate-plan';
+
+        // Example goals
+        const examples = {
+            aws: {
+                goal: 'Prepare for AWS Solutions Architect certification',
+                context: 'Beginner with basic cloud knowledge, can study 10 hours per week'
+            },
+            piano: {
+                goal: 'Learn to play jazz piano',
+                context: 'Complete beginner, no prior music experience, 30 minutes practice daily'
+            },
+            fitness: {
+                goal: 'Run a half marathon',
+                context: 'Currently inactive, want to train over 12 weeks'
+            },
+            python: {
+                goal: 'Learn Python for data analysis',
+                context: 'Know basic programming, want to use pandas and matplotlib'
+            }
+        };
+
+        function fillExample(type) {
+            const example = examples[type];
+            document.getElementById('goal').value = example.goal;
+            document.getElementById('context').value = example.context;
+        }
+
+        document.getElementById('goalForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const goal = document.getElementById('goal').value.trim();
+            const context = document.getElementById('context').value.trim();
+
+            if (!goal) {
+                showError('Please enter a goal');
+                return;
+            }
+
+            // Show loading state
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        goal: goal,
+                        context: context || undefined
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayPlan(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Failed to generate plan. Please try again or check if the API is running.');
+            } finally {
+                document.getElementById('submitBtn').disabled = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+
+        function displayPlan(plan) {
+            const resultDiv = document.getElementById('result');
+
+            let html = `<h2>${plan.goal}</h2>`;
+
+            // Meta information
+            html += `<div class="meta-info">`;
+            html += `<p><strong>Category:</strong> ${plan.category || 'General'}</p>`;
+            html += `<p><strong>Duration:</strong> ${plan.estimated_duration_weeks} weeks</p>`;
+            if (plan.total_estimated_hours) {
+                html += `<p><strong>Total Time:</strong> ~${plan.total_estimated_hours} hours</p>`;
+            }
+            html += `</div>`;
+
+            // Weekly breakdown
+            if (plan.weekly_breakdown && plan.weekly_breakdown.length > 0) {
+                plan.weekly_breakdown.forEach(week => {
+                    html += `<div class="week">`;
+                    html += `<h3>Week ${week.week_number}: ${week.focus_area}</h3>`;
+
+                    if (week.tasks && week.tasks.length > 0) {
+                        html += `<ul>`;
+                        week.tasks.forEach(task => {
+                            html += `<li>${task}</li>`;
+                        });
+                        html += `</ul>`;
+                    }
+
+                    if (week.milestone) {
+                        html += `<div class="milestone">`;
+                        html += `<strong>Milestone:</strong> ${week.milestone}`;
+                        html += `</div>`;
+                    }
+
+                    html += `</div>`;
+                });
+            }
+
+            resultDiv.innerHTML = html;
+            resultDiv.style.display = 'block';
+
+            // Scroll to results
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+
+</html>

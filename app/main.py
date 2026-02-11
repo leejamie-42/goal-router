@@ -44,14 +44,14 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# # add CORS middleware (allows frontend apps to call this API)
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],  # In production, specify actual domains
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+# add CORS middleware (allows frontend apps to call this API)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # health check endpoint (important for AWS monitoring)
