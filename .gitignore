@@ -25,3 +25,7 @@ lambda-deployment.zip
 *.tfstate
 *.tfstate.backup
 .terraform/
+
+# AWS API call testing
+request.json
+output.json

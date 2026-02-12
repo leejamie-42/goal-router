@@ -84,7 +84,7 @@ jobs:
       - name: Test Docker container
         run: |
           docker run -d -p 8000:8000 --name test-container \
-            -e USE_MOCK_AWS=true \
+            -e USE_MOCK_AWS=false \
             ai-router:test
 
           # Wait for container to start

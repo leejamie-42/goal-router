@@ -6,14 +6,16 @@ resource "aws_lambda_function" "api" {
   handler          = "app.main.handler"
   source_code_hash = filebase64sha256(var.lambda_zip_path)
   runtime          = "python3.12"
+  architectures    = ["arm64"]
   timeout          = var.lambda_timeout
   memory_size      = var.lambda_memory
 
   # Environment variables
   environment {
     variables = {
-      USE_MOCK_AWS        = "true"
-      APP_AWS_REGION      = var.aws_region
+      USE_MOCK_AWS = "false"
+      APP_AWS_REGION = var.aws_region
+      BEDROCK_REGION = "us-east-1"
       DYNAMODB_TABLE_NAME = aws_dynamodb_table.usage_logs.name
     }
   }
