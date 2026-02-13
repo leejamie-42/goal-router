@@ -109,6 +109,7 @@ curl -X POST "http://localhost:8000/api/v1/generate-plan" \
   "total_estimated_hours": 96.0,
   "created_at": "2026-02-10T10:30:00Z"
 }
+```
 
 
 
@@ -180,7 +181,7 @@ curl -X POST "http://localhost:8000/api/v1/generate-plan" \
 - **Pre-commit** - Code quality hooks
 
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 goal-router/
