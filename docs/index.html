@@ -278,16 +278,21 @@
     <div class="container">
         <div class="header">
             <!-- <h1>🎯 AI Goal Planner</h1> -->
-            <!-- goal / target / crosshair -->
+            <!-- goal / target / crosshair / locate-fixed , plane -->
+            <!-- trending up / redo -->
             <h1>
-                <i data-lucide="crosshair" style="width: 40px; height: 40px;"></i>
-                AI Goal Planner
+                <i data-lucide="plane" style="width: 40px; height: 40px;"></i>
+                <!-- <i data-lucide="redo" style="width: 40px; height: 40px; transform: rotate(20deg);"></i> -->
+                <i data-lucide="locate-fixed" style="width: 40px; height: 40px;"></i>
+                <!-- AI Goal Planner -->
+                Path Pilot
             </h1>
             <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
             <script>
                 lucide.createIcons();
             </script>
-            <p>Transform your goals into structured action plans</p>
+            <!-- <p>Transform your goals into structured action plans</p> -->
+            <p>Navigate your next move with AI-powered paths to your goals.</p>
         </div>
 
 
@@ -310,7 +315,8 @@
                     <span class="example-btn" onclick="fillExample('aws')">AWS Certification</span>
                     <span class="example-btn" onclick="fillExample('piano')">Learn Piano</span>
                     <span class="example-btn" onclick="fillExample('fitness')">Get Fit</span>
-                    <span class="example-btn" onclick="fillExample('python')">Learn Python</span>
+                    <!-- <span class="example-btn" onclick="fillExample('python')">Learn Python</span> -->
+                    <span class="example-btn" onclick="fillExample('finance')">Budget Smarter</span>
                 </div>
 
                 <button type="submit" id="submitBtn">Generate My Plan</button>
@@ -328,7 +334,7 @@
         </div>
 
         <div class="footer">
-            <p>Built by <strong>Jamie Lee</strong> | <a href="https://github.com/yourusername/goal-router"
+            <p>Built by <strong>Jamie Lee</strong> | <a href="https://github.com/leejamie-42/goal-router"
                     target="_blank">View on GitHub</a></p>
             <p style="font-size: 0.9em; margin-top: 8px;">Portfolio project demonstrating AI orchestration, serverless
                 architecture, and cloud engineering</p>
@@ -336,11 +342,14 @@
     </div>
 
     <script>
-        // const API_URL = 'YOUR_API_GATEWAY_URL_HERE/api/v1/generate-plan';
         const API_URL = 'https://5zy0vx4wsb.execute-api.ap-southeast-2.amazonaws.com/api/v1/generate-plan';
 
         // Example goals
         const examples = {
+            // public_speaking: {
+            //     goal: 'Improve public speaking skills',
+            //     context: 'Nervous presenting at work meetings, struggle with voice projection'
+            // },
             aws: {
                 goal: 'Prepare for AWS Solutions Architect certification',
                 context: 'Beginner with basic cloud knowledge, can study 10 hours per week'
@@ -349,13 +358,21 @@
                 goal: 'Learn to play jazz piano',
                 context: 'Complete beginner, no prior music experience, 30 minutes practice daily'
             },
+            // fitness: {
+            //     goal: 'Run a half marathon',
+            //     context: 'Currently inactive, want to train over 12 weeks'
+            // },
             fitness: {
-                goal: 'Run a half marathon',
-                context: 'Currently inactive, want to train over 12 weeks'
+                goal: 'Build muscle and strength',
+                context: '20 year old male, beginner in the gym, currently goes to the gym twice a week. I can currently bench press 50kg and eventually want to be able to bench press 70kg.'
             },
-            python: {
-                goal: 'Learn Python for data analysis',
-                context: 'Know basic programming, want to use pandas and matplotlib'
+            // python: {
+            //     goal: 'Learn Python for data analysis',
+            //     context: 'Know basic programming, want to use pandas and matplotlib'
+            // },
+            finance: {
+                goal: 'Become better at personal budgeting',
+                context: 'Full-time job. I want to save for travel, but have trouble tracking expenses'
             }
         };
 
@@ -424,8 +441,10 @@
             }
             html += `</div>`;
 
-            // Weekly breakdown
+            // weekly plan session
             if (plan.weekly_breakdown && plan.weekly_breakdown.length > 0) {
+                html += `<h2 style="margin-top:30px;">📅 Weekly Plan</h2>`;
+
                 plan.weekly_breakdown.forEach(week => {
                     html += `<div class="week">`;
                     html += `<h3>Week ${week.week_number}: ${week.focus_area}</h3>`;
@@ -433,27 +452,45 @@
                     if (week.tasks && week.tasks.length > 0) {
                         html += `<ul>`;
                         week.tasks.forEach(task => {
-                            html += `<li>${task}</li>`;
+                            html += `<li>
+                        ${task.task}
+                        <br>
+                        <small>⏱ ${task.estimated_hours} hrs
+                        ${task.milestone ? ' • 🎯 Milestone' : ''}</small>
+                    </li>`;
                         });
                         html += `</ul>`;
-                    }
-
-                    if (week.milestone) {
-                        html += `<div class="milestone">`;
-                        html += `<strong>Milestone:</strong> ${week.milestone}`;
-                        html += `</div>`;
                     }
 
                     html += `</div>`;
                 });
             }
 
+            // learning resources section
+            if (plan.learning_resources && plan.learning_resources.length > 0) {
+                html += `<h2 style="margin-top:40px;">📚 Recommended Resources</h2>`;
+                html += `<div class="week">`;
+                html += `<ul>`;
+
+                plan.learning_resources.forEach(resource => {
+                    html += `<li>
+                <strong>${resource.title}</strong>
+                <br>
+                <a href="${resource.url}" target="_blank">${resource.url}</a>
+                <br>
+                <small>Type: ${resource.resource_type}</small>
+            </li>`;
+                });
+
+                html += `</ul>`;
+                html += `</div>`;
+            }
+
             resultDiv.innerHTML = html;
             resultDiv.style.display = 'block';
-
-            // Scroll to results
             resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+
 
         function showError(message) {
             const errorDiv = document.getElementById('error');

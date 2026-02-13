@@ -19,13 +19,18 @@ app/__pycache__/
 
 NOTES.txt
 
+package/
+
 lambda-package/
 lambda-deployment.zip
 .aws/
 *.tfstate
 *.tfstate.backup
 .terraform/
+build-lambda.ps1
 
 # AWS API call testing
 request.json
 output.json
+response.json
+lambda-test.json
