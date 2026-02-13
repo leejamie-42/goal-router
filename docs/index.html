@@ -300,32 +300,32 @@
             <form id="goalForm">
                 <div class="form-group">
                     <label for="goal">What's your goal? *</label>
-                    <textarea id="goal" rows="3" placeholder="e.g., Prepare for AWS Solutions Architect certification"
+                    <textarea id="goal" rows="3" placeholder="e.g., Become better at personal budgeting"
                         required></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="context">Additional context (optional)</label>
                     <textarea id="context" rows="2"
-                        placeholder="e.g., Beginner with basic cloud knowledge, 10 hours/week available"></textarea>
+                        placeholder="e.g., Full-time job. I want to save for travel, but have trouble tracking expenses"></textarea>
                 </div>
 
                 <div class="examples">
                     <h4>Try an example:</h4>
-                    <span class="example-btn" onclick="fillExample('aws')">AWS Certification</span>
-                    <span class="example-btn" onclick="fillExample('piano')">Learn Piano</span>
+                    <span class="example-btn" onclick="fillExample('finance')">Budget Smarter</span>
                     <span class="example-btn" onclick="fillExample('fitness')">Get Fit</span>
                     <!-- <span class="example-btn" onclick="fillExample('python')">Learn Python</span> -->
-                    <span class="example-btn" onclick="fillExample('finance')">Budget Smarter</span>
+                    <span class="example-btn" onclick="fillExample('piano')">Learn Piano</span>
+                    <span class="example-btn" onclick="fillExample('aws')">AWS Certification</span>
                 </div>
 
-                <button type="submit" id="submitBtn">Generate My Plan</button>
+                <button type="submit" id="submitBtn">Generate Plan</button>
             </form>
 
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>Creating your personalized plan...</p>
-                <p style="font-size: 0.9em; color: #666; margin-top: 8px;">This may take 5-10 seconds</p>
+                <p style="font-size: 0.9em; color: #666; margin-top: 8px;">This may take a few minutes</p>
             </div>
 
             <div class="error" id="error"></div>

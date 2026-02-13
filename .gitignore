@@ -28,6 +28,7 @@ lambda-deployment.zip
 *.tfstate.backup
 .terraform/
 build-lambda.ps1
+lambda-build-deploy-guide.txt
 
 # AWS API call testing
 request.json
