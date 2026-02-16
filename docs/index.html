@@ -1,3 +1,4 @@
+<!-- For testing, change line "const USE_MOCK_DATA = false;" to true -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -295,28 +296,26 @@
             <p>Navigate your next move with AI-powered paths to your goals.</p>
         </div>
 
-
         <div class="card">
             <form id="goalForm">
                 <div class="form-group">
                     <label for="goal">What's your goal? *</label>
-                    <textarea id="goal" rows="3" placeholder="e.g., Become better at personal budgeting"
-                        required></textarea>
+                    <textarea id="goal" rows="3" placeholder="e.g., Learn Python for data analysis" required></textarea>
                 </div>
 
                 <div class="form-group">
                     <label for="context">Additional context (optional)</label>
                     <textarea id="context" rows="2"
-                        placeholder="e.g., Full-time job. I want to save for travel, but have trouble tracking expenses"></textarea>
+                        placeholder="e.g., Know basic programming, want to use pandas and matplotlib"></textarea>
                 </div>
 
                 <div class="examples">
                     <h4>Try an example:</h4>
+                    <!-- <span class="example-btn" onclick="fillExample('aws')">AWS Certification</span> -->
+                    <span class="example-btn" onclick="fillExample('python')">Learn Python</span>
                     <span class="example-btn" onclick="fillExample('finance')">Budget Smarter</span>
                     <span class="example-btn" onclick="fillExample('fitness')">Get Fit</span>
-                    <!-- <span class="example-btn" onclick="fillExample('python')">Learn Python</span> -->
                     <span class="example-btn" onclick="fillExample('piano')">Learn Piano</span>
-                    <span class="example-btn" onclick="fillExample('aws')">AWS Certification</span>
                 </div>
 
                 <button type="submit" id="submitBtn">Generate Plan</button>
@@ -344,12 +343,108 @@
     <script>
         const API_URL = 'https://5zy0vx4wsb.execute-api.ap-southeast-2.amazonaws.com/api/v1/generate-plan';
 
+        // MOCK MODE TOGGLE
+        const USE_MOCK_DATA = false;
+
+        // MOCK DATA FOR TESTING
+        const MOCK_PLAN = {
+            request_id: "mock-123-456",
+            goal: "Learn Python programming",
+            category: "skill-learning",
+            estimated_duration_weeks: 10,
+            weekly_breakdown: [
+                {
+                    week_number: 1,
+                    focus_area: "Python Fundamentals",
+                    tasks: [
+                        {
+                            task: "Complete Python basics tutorial on Codecademy",
+                            estimated_hours: 8,
+                            milestone: true
+                        },
+                        {
+                            task: "Set up Python development environment (VS Code, Python 3.11)",
+                            estimated_hours: 2,
+                            milestone: false
+                        },
+                        {
+                            task: "Practice basic syntax with 20 coding exercises",
+                            estimated_hours: 5,
+                            milestone: false
+                        }
+                    ]
+                },
+                {
+                    week_number: 2,
+                    focus_area: "Data Structures & Control Flow",
+                    tasks: [
+                        {
+                            task: "Learn lists, dictionaries, and sets through exercises",
+                            estimated_hours: 6,
+                            milestone: false
+                        },
+                        {
+                            task: "Master if/else statements, loops, and functions",
+                            estimated_hours: 7,
+                            milestone: true
+                        }
+                    ]
+                },
+                {
+                    week_number: 3,
+                    focus_area: "Object-Oriented Programming",
+                    tasks: [
+                        {
+                            task: "Understand classes, objects, and inheritance",
+                            estimated_hours: 8,
+                            milestone: true
+                        },
+                        {
+                            task: "Build a simple text-based game using OOP principles",
+                            estimated_hours: 10,
+                            milestone: true
+                        }
+                    ]
+                }
+            ],
+            resources: [
+                {
+                    title: "Python for Everybody Specialization",
+                    url: "https://www.coursera.org/specializations/python",
+                    resource_type: "course"
+                },
+                {
+                    title: "Python Official Documentation",
+                    url: "https://docs.python.org/3/tutorial/",
+                    resource_type: "documentation"
+                },
+                {
+                    title: "Automate the Boring Stuff with Python",
+                    url: "https://automatetheboringstuff.com/",
+                    resource_type: "book"
+                },
+                {
+                    title: "Real Python Tutorials",
+                    url: "https://realpython.com/",
+                    resource_type: "article"
+                },
+                {
+                    title: "Python Crash Course by Eric Matthes",
+                    url: "https://www.amazon.com/Python-Crash-Course-Eric-Matthes/dp/1718502702",
+                    resource_type: "book"
+                }
+            ],
+            total_estimated_hours: 85,
+            created_at: new Date().toISOString(),
+            metadata: {
+                tokens_used: { input: 450, output: 1200, total: 1650 },
+                model: "claude-3-haiku",
+                mock_mode: true
+            }
+        };
+
         // Example goals
         const examples = {
-            // public_speaking: {
-            //     goal: 'Improve public speaking skills',
-            //     context: 'Nervous presenting at work meetings, struggle with voice projection'
-            // },
             aws: {
                 goal: 'Prepare for AWS Solutions Architect certification',
                 context: 'Beginner with basic cloud knowledge, can study 10 hours per week'
@@ -358,18 +453,14 @@
                 goal: 'Learn to play jazz piano',
                 context: 'Complete beginner, no prior music experience, 30 minutes practice daily'
             },
-            // fitness: {
-            //     goal: 'Run a half marathon',
-            //     context: 'Currently inactive, want to train over 12 weeks'
-            // },
             fitness: {
                 goal: 'Build muscle and strength',
                 context: '20 year old male, beginner in the gym, currently goes to the gym twice a week. I can currently bench press 50kg and eventually want to be able to bench press 70kg.'
             },
-            // python: {
-            //     goal: 'Learn Python for data analysis',
-            //     context: 'Know basic programming, want to use pandas and matplotlib'
-            // },
+            python: {
+                goal: 'Learn Python for data analysis',
+                context: 'Know basic programming, want to use pandas and matplotlib'
+            },
             finance: {
                 goal: 'Become better at personal budgeting',
                 context: 'Full-time job. I want to save for travel, but have trouble tracking expenses'
@@ -400,22 +491,33 @@
             document.getElementById('error').style.display = 'none';
 
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        goal: goal,
-                        context: context || undefined
-                    })
-                });
+                let data;
 
-                if (!response.ok) {
-                    throw new Error(`API error: ${response.status}`);
+                if (USE_MOCK_DATA) {
+                    // USE MOCK DATA FOR TESTING
+                    console.log('Using mock data for testing');
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    data = MOCK_PLAN;
+                } else {
+                    // USE REAL API CALL
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            goal: goal,
+                            context: context || undefined
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    data = await response.json();
                 }
 
-                const data = await response.json();
                 displayPlan(data);
 
             } catch (error) {
@@ -426,6 +528,7 @@
                 document.getElementById('loading').style.display = 'none';
             }
         });
+
 
         function displayPlan(plan) {
             const resultDiv = document.getElementById('result');
@@ -441,7 +544,8 @@
             }
             html += `</div>`;
 
-            // weekly plan session
+
+            // Weekly plan
             if (plan.weekly_breakdown && plan.weekly_breakdown.length > 0) {
                 html += `<h2 style="margin-top:30px;">📅 Weekly Plan</h2>`;
 
@@ -453,11 +557,10 @@
                         html += `<ul>`;
                         week.tasks.forEach(task => {
                             html += `<li>
-                        ${task.task}
-                        <br>
-                        <small>⏱ ${task.estimated_hours} hrs
-                        ${task.milestone ? ' • 🎯 Milestone' : ''}</small>
-                    </li>`;
+                                ${task.task}
+                                ${task.estimated_hours ? `<br><small style="color: #666;">Estimated time: ${task.estimated_hours} hours</small>` : ''}
+                                ${task.milestone ? `<br><small style="color: #1e3a8a; font-weight: 600;">★ Milestone</small>` : ''}
+                            </li>`;
                         });
                         html += `</ul>`;
                     }
@@ -467,12 +570,12 @@
             }
 
             // learning resources section
-            if (plan.learning_resources && plan.learning_resources.length > 0) {
+            if (plan.resources && plan.resources.length > 0) {
                 html += `<h2 style="margin-top:40px;">📚 Recommended Resources</h2>`;
                 html += `<div class="week">`;
                 html += `<ul>`;
 
-                plan.learning_resources.forEach(resource => {
+                plan.resources.forEach(resource => {
                     html += `<li>
                 <strong>${resource.title}</strong>
                 <br>
