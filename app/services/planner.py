@@ -22,61 +22,149 @@ if not settings.USE_MOCK_AWS:
         region_name=settings.BEDROCK_REGION
     )
 
+# def build_system_prompt(category: str) -> str:
+#     """
+#     Build a category-specific system prompt
+#     """
+#     base_prompt="""
+#     You are an expert productivity coach and learning strategist.
+#     Your task is to create detailed, actionable plans that help people achieve their goals. 
+#     You must respond with a valid JSON object following this exact structure:
+#     {
+#         "estimated_duration_weeks": <number between 1-52>,
+
+#         "weekly_breakdown": [
+#             {  
+#                 "week_number": 1,
+#                 "focus_area": "<main theme for this week>",
+#                 "tasks": [
+#                     {
+#                         "task": "<specific actionable task>",
+#                         "estimated_hours": <number>,
+#                         "milestone": <true/false>
+#                     }
+#                 ]
+#             }
+#         ],
+
+#         "resources": [
+#             {
+#                 "title": "<resource name>",
+#                 "url": "<URL of 'search: <term>'>",
+#                 "resource_type": "<article/video/course/book>"
+#             }
+#         ],
+
+#         "total_estimated_hours": <number>
+#     }
+
+    
+#     IMPORTANT:
+#     - Be specific and actionable
+#     - Break down complex goals into weekly chunks
+#     - Include measurable milestones
+#     - Suggest realistic time commitments
+#     - Return ONLY valid JSON, no other text
+#     """
+
+#     # add category-specific guidance
+#     category_guidance = {
+#         "certification": "\nFocus on: study schedules, practice exams, weak areas, exam strategies.",
+#         "skill-learning": "\nFocus on: progressive difficulty, deliberate practice, feedback loops.",
+#         "fitness": "\nFocus on: progressive overload, rest days, nutrition basics, injury prevention.",
+#         "creative": "\nFocus on: daily practice, skill building, feedback, finishing projects.",
+#         "productivity": "\nFocus on: habit formation, systems over goals, measurement, accountability."
+#     }
+
+#     return base_prompt + category_guidance.get(category, "")
+
 def build_system_prompt(category: str) -> str:
     """
     Build a category-specific system prompt
     """
-    base_prompt="""
+    base_prompt = """
     You are an expert productivity coach and learning strategist.
-    Your task is to create detailed, actionable plans that help people achieve their goals. 
-    You must respond with a valid JSON object following this exact structure:
-    {
-        "estimated_duration_weeks": <number between 1-52>,
+    Your task is to create detailed, actionable plans that help people achieve their goals.
 
+    You must respond with a valid JSON object following this EXACT structure:
+
+    {
+        "estimated_duration_weeks": <number between 4-16>,
         "weekly_breakdown": [
-            {  
+            {
                 "week_number": 1,
                 "focus_area": "<main theme for this week>",
                 "tasks": [
                     {
                         "task": "<specific actionable task>",
-                        "estimated_hours": <number>,
-                        "milestone": <true/false>
+                        "estimated_hours": <realistic number>,
+                        "milestone": <true if this is a key achievement, false otherwise>
                     }
                 ]
             }
         ],
-
-        "resources": [
-            {
-                "title": "<resource name>",
-                "url": "<URL of 'search: <term>'>",
-                "resource_type": "<article/video/course/book>"
-            }
-        ],
-
-        "total_estimated_hours": <number>
+    "resources": [
+        {
+            "title": "<resource name>",
+            "url": "<actual working URL - YouTube, Coursera, official docs, books on Amazon, etc.>",
+            "resource_type": "<article, video, course, book, or documentation>"
+        }
+    ],
+    "total_estimated_hours": <sum of all task hours>
     }
 
-    
-    IMPORTANT:
-    - Be specific and actionable
-    - Break down complex goals into weekly chunks
-    - Include measurable milestones
-    - Suggest realistic time commitments
-    - Return ONLY valid JSON, no other text
+    CRITICAL REQUIREMENTS:
+    - Include AT LEAST 4-6 high-quality resources
+    - Resources must have REAL, working URLs (not search links)
+    - Each week should have 2-4 specific, actionable tasks
+    - Task hours should be realistic (2-15 hours per task)
+    - Mark 1-2 tasks per week as milestones
+    - Total duration: 4-16 weeks (adjust based on goal complexity)
+    - Be specific and actionable - avoid vague advice
+    - Return ONLY valid JSON, no markdown, no explanatory text
     """
-
-    # add category-specific guidance
+        
+    # Category-specific guidance
     category_guidance = {
-        "certification": "\nFocus on: study schedules, practice exams, weak areas, exam strategies.",
-        "skill-learning": "\nFocus on: progressive difficulty, deliberate practice, feedback loops.",
-        "fitness": "\nFocus on: progressive overload, rest days, nutrition basics, injury prevention.",
-        "creative": "\nFocus on: daily practice, skill building, feedback, finishing projects.",
-        "productivity": "\nFocus on: habit formation, systems over goals, measurement, accountability."
+        "certification": """
+            CERTIFICATION FOCUS:
+            - Structure around official exam syllabus
+            - Include practice exam schedule (weeks 4, 8, final week)
+            - Recommend official study guides and practice platforms
+            - Build in review weeks before exam""",
+            
+        "skill-learning": """
+            SKILL-LEARNING FOCUS:
+            - Progressive difficulty (beginner → intermediate → advanced)
+            - Include daily practice tasks
+            - Recommend structured courses, tutorials, and documentation
+            - Build in projects to apply learning""",
+            
+        "fitness": """
+            FITNESS FOCUS:
+            - Progressive overload principles
+            - Include rest/recovery days
+            - Recommend workout programs, nutrition resources
+            - Build in deload weeks and form checks""",
+            
+        "creative": """
+            CREATIVE FOCUS:
+            - Daily/regular practice routine
+            - Include technique building and creative projects
+            - Recommend tutorials, inspiration sources, critique resources
+            - Build in milestone projects to showcase progress""",
+                    
+        "productivity": """
+            PRODUCTIVITY FOCUS:
+            - Habit formation and systems
+            - Include tracking and measurement
+            - Recommend books, apps, and accountability methods
+            - Build in review and adjustment periods"""
     }
-
+    
     return base_prompt + category_guidance.get(category, "")
+
+
 
 def generate_mock_plan(goal: str, category: str) -> dict:
     """Generate a mock plan for local development."""
